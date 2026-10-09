@@ -217,6 +217,8 @@
       background-size: 200% 100%; animation: shimmer 1.4s infinite; }
     @keyframes shimmer { to { background-position: -200% 0; } }
     .voir-tout { text-align: center; margin-top: 38px; }
+    .etat-vide { grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--texte-doux); font-weight: 600; }
+    .etat-vide a { color: var(--rose-fonce); }
 
     /* ---------- À propos ---------- */
     .about { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center; }
@@ -346,8 +348,8 @@
         <h2>La communauté grandit</h2>
       </div>
       <div class="stats-grid">
-        <div class="stat-card reveal"><div class="num" id="stat-subs">—</div><div class="lbl">Abonnés</div></div>
-        <div class="stat-card reveal" style="transition-delay:.08s"><div class="num" id="stat-videos">—</div><div class="lbl">Vidéos</div></div>
+        <div class="stat-card reveal"><div class="num" id="stat-subs">1,29 k</div><div class="lbl">Abonnés</div></div>
+        <div class="stat-card reveal" style="transition-delay:.08s"><div class="num" id="stat-videos">459+</div><div class="lbl">Vidéos</div></div>
         <div class="stat-card reveal" style="transition-delay:.16s"><div class="num" id="stat-vues">—</div><div class="lbl">Vues totales</div></div>
       </div>
     </div>
@@ -489,6 +491,9 @@
       el.style.opacity = 0;
       setTimeout(() => { el.textContent = text; el.style.transition = 'opacity .5s'; el.style.opacity = 1; }, 150);
     }
+    function showUnavailable(gridId, message, url, label) {
+      document.getElementById(gridId).innerHTML = `<p class="etat-vide">${message} <a href="${url}" target="_blank" rel="noopener">${label}</a></p>`;
+    }
     async function loadStats() {
       try {
         const s = await (await fetch('/api/lya/stats')).json();
@@ -518,7 +523,10 @@
     }
 
     fetch('/api/lya/videos').then((r) => r.json()).then((vids) => {
-      if (!Array.isArray(vids) || !vids.length) return;
+      if (!Array.isArray(vids) || !vids.length) {
+        showUnavailable('videos-grid', 'Les vidéos récentes sont à retrouver sur', 'https://www.youtube.com/@miss_lyaYT/videos', 'la chaîne YouTube.');
+        return;
+      }
       const top = [...vids].sort((a, b) => parseViews(b.views) - parseViews(a.views)).slice(0, 4);
       document.getElementById('videos-grid').innerHTML = top.map((v) => `
         <a class="vid" href="${v.url}" target="_blank" rel="noopener">
@@ -526,11 +534,14 @@
           <div class="titre">${v.title.replace(/</g, '&lt;')}</div>
           <div class="meta">${v.views ? v.views + ' · ' : ''}${v.published && v.published.includes('-') ? relDate(v.published) : (v.published || '')}</div>
         </a>`).join('');
-    }).catch(() => {});
+    }).catch(() => showUnavailable('videos-grid', 'Les vidéos récentes sont à retrouver sur', 'https://www.youtube.com/@miss_lyaYT/videos', 'la chaîne YouTube.'));
 
     // Derniers posts communauté
     fetch('/api/lya/posts').then((r) => r.json()).then((posts) => {
-      if (!Array.isArray(posts) || !posts.length) return;
+      if (!Array.isArray(posts) || !posts.length) {
+        showUnavailable('posts-grid', 'Les posts récents sont à retrouver sur', 'https://www.youtube.com/@miss_lyaYT/posts', 'la communauté YouTube.');
+        return;
+      }
       document.getElementById('posts-grid').innerHTML = posts.slice(0, 9).map((p) => `
         <a class="post-card" href="${p.url}" target="_blank" rel="noopener">
           ${p.images.length === 1 ? `<img class="img" src="${p.images[0]}" alt="" loading="lazy">`
@@ -540,7 +551,7 @@
             <div class="meta">${p.published || ''}${p.likes ? ` <span class="like">♡ ${p.likes}</span>` : ''}</div>
           </div>
         </a>`).join('');
-    }).catch(() => {});
+    }).catch(() => showUnavailable('posts-grid', 'Les posts récents sont à retrouver sur', 'https://www.youtube.com/@miss_lyaYT/posts', 'la communauté YouTube.'));
   </script>
 </body>
 </html>
